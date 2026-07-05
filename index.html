@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jurnal Risiko</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"]{
+    --bg:#14171C;
+    --panel:#1B1F26;
+    --panel-2:#20252D;
+    --rule:#2A2F38;
+    --rule-soft:#232830;
+    --ink:#ECEDEE;
+    --ink-dim:#8D95A0;
+    --ink-faint:#5B626D;
+    --accent:#5DD4C7;
+    --accent-soft:#1B3835;
+    --sage:#7FBF8F;
+    --sage-soft:#1D3324;
+    --brick:#E0796A;
+    --brick-soft:#3A2321;
+    --shadow:none;
+  }
+  :root[data-theme="light"]{
+    --bg:#F7F6F3;
+    --panel:#FFFFFF;
+    --panel-2:#F1F0EC;
+    --rule:#E4E2DC;
+    --rule-soft:#ECEAE4;
+    --ink:#1B1D21;
+    --ink-dim:#6B6F76;
+    --ink-faint:#9A9DA3;
+    --accent:#0E9488;
+    --accent-soft:#DFF5F1;
+    --sage:#2F8F5B;
+    --sage-soft:#E3F3E9;
+    --brick:#C24E3B;
+    --brick-soft:#FBE7E3;
+    --shadow:0 1px 2px rgba(20,20,15,0.04), 0 4px 14px rgba(20,20,15,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    transition:background .2s ease, color .2s ease;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:28px 20px 60px;}
+
+  header.top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding-bottom:20px;
+    margin-bottom:22px;
+    border-bottom:1px solid var(--rule);
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    color:var(--accent);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-.01em;
+  }
+  .sub{color:var(--ink-dim);font-size:13px;margin-top:4px;}
+
+  .top-right{display:flex;align-items:center;gap:10px;}
+
+  .theme-toggle{
+    display:flex;
+    align-items:center;
+    gap:2px;
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:20px;
+    padding:3px;
+  }
+  .theme-toggle button{
+    border:none;
+    background:transparent;
+    color:var(--ink-faint);
+    width:30px;height:30px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+  }
+  .theme-toggle button.active{background:var(--panel-2);color:var(--accent);}
+
+  nav.tabs{
+    display:flex;gap:2px;
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:3px;
+    box-shadow:var(--shadow);
+  }
+  nav.tabs button{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.04em;
+    background:transparent;
+    border:none;
+    color:var(--ink-dim);
+    padding:9px 16px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  nav.tabs button.active{background:var(--panel-2);color:var(--accent);}
+
+  section.view{display:none;}
+  section.view.active{display:block;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px;
+    font-weight:600;
+    margin:0 0 16px;
+    color:var(--ink);
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2 .n{
+    color:var(--accent);
+    background:var(--accent-soft);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    padding:3px 7px;
+    border-radius:5px;
+  }
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .field{flex:1;min-width:120px;}
+  label{
+    display:block;
+    font-size:10.5px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-bottom:6px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--rule);
+    color:var(--ink);
+    padding:9px 10px;
+    border-radius:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  input:focus, select:focus, textarea:focus{outline:none;border-color:var(--accent);}
+  textarea{font-family:'Inter',sans-serif;resize:vertical;min-height:54px;}
+
+  .preset-row{display:flex;gap:8px;margin-top:10px;}
+  .preset{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:5px 11px;
+    border-radius:20px;
+    border:1px solid var(--rule);
+    background:var(--panel-2);
+    color:var(--ink-dim);
+    cursor:pointer;
+  }
+  .preset.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
+  .result-big{display:flex;align-items:baseline;gap:10px;margin:18px 0 4px;flex-wrap:wrap;}
+  .result-big .amt{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:var(--accent);}
+  .result-big .lbl{color:var(--ink-dim);font-size:13px;}
+  .expectancy{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-dim);
+    border-top:1px dashed var(--rule);
+    padding-top:12px;
+    margin-top:14px;
+    line-height:1.6;
+  }
+  .expectancy b{color:var(--sage);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    text-align:left;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:500;
+    font-size:10px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    border-bottom:1px solid var(--rule);
+    padding:8px 6px;
+  }
+  tbody td{
+    padding:9px 6px;
+    border-bottom:1px solid var(--rule-soft);
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--ink);
+  }
+  tbody tr:hover{background:var(--panel-2);}
+  .tag{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10.5px;font-weight:500;}
+  .tag.loss{background:var(--brick-soft);color:var(--brick);}
+  .tag.win{background:var(--sage-soft);color:var(--sage);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .stat{background:var(--panel-2);border:1px solid var(--rule);border-radius:10px;padding:14px;}
+  .stat .v{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;}
+  .stat .k{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+  .stat.pos .v{color:var(--sage);}
+  .stat.neg .v{color:var(--brick);}
+  .stat.neu .v{color:var(--accent);}
+
+  .beads{display:flex;gap:5px;flex-wrap:wrap;margin-top:12px;}
+  .bead{width:10px;height:10px;border-radius:50%;}
+  .bead.win{background:var(--sage);}
+  .bead.loss{background:var(--brick);}
+  .bead.be{background:var(--ink-faint);}
+
+  button.primary{
+    background:var(--accent);
+    color:#0B2320;
+    border:none;
+    padding:10px 18px;
+    border-radius:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  :root[data-theme="light"] button.primary{color:#FFFFFF;}
+  button.ghost{
+    background:var(--panel-2);
+    border:1px solid var(--rule);
+    color:var(--ink-dim);
+    padding:9px 16px;
+    border-radius:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+  }
+  button.ghost:hover{color:var(--ink);}
+  button.del{background:transparent;border:none;color:var(--brick);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .empty{text-align:center;padding:34px 10px;color:var(--ink-faint);font-size:13px;}
+  .foot-note{font-size:11.5px;color:var(--ink-faint);margin-top:6px;line-height:1.5;}
+  #chart{width:100%;height:120px;}
+  .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .actions-group{display:flex;gap:8px;}
+  @media(max-width:640px){
+    .stat-grid{grid-template-columns:repeat(2,1fr);}
+    h1{font-size:23px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand-eyebrow">Manajemen Modal · Disiplin Eksekusi</div>
+      <h1>Jurnal Risiko</h1>
+      <div class="sub">Kalkulator posisi &amp; buku trading — tersimpan otomatis di perangkat ini</div>
+    </div>
+    <div class="top-right">
+      <div class="theme-toggle">
+        <button id="btnDark" onclick="setTheme('dark')" title="Mode gelap">●</button>
+        <button id="btnLight" onclick="setTheme('light')" title="Mode terang">○</button>
+      </div>
+      <nav class="tabs">
+        <button id="tabBtnCalc" class="active" onclick="switchTab('calc')">KALKULATOR</button>
+        <button id="tabBtnJournal" onclick="switchTab('journal')">JURNAL</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===================== TAB: KALKULATOR ===================== -->
+  <section id="view-calc" class="view active">
+
+    <div class="card">
+      <h2><span class="n">01</span>Parameter Modal &amp; Sistem</h2>
+      <div class="row">
+        <div class="field">
+          <label>Modal Saat Ini ($)</label>
+          <input type="number" id="inModal" value="100" min="1" step="1" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Risiko per Trade (%)</label>
+          <input type="number" id="inRisk" value="1" min="0.1" max="20" step="0.1" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Risk : Reward</label>
+          <input type="text" id="inRR" value="1" min="0.1" step="0.1" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Winrate Sistem (%)</label>
+          <input type="number" id="inWR" value="70" min="1" max="99" step="1" oninput="calc()">
+        </div>
+      </div>
+      <div class="preset-row" id="presetRow">
+        <button class="preset" onclick="setRisk(1)">1%</button>
+        <button class="preset" onclick="setRisk(2)">2%</button>
+        <button class="preset" onclick="setRisk(3)">3%</button>
+        <button class="preset" onclick="setRisk(5)">5%</button>
+      </div>
+
+      <div class="result-big">
+        <span class="amt" id="riskAmt">$1.00</span>
+        <span class="lbl">nilai risiko per posisi (jarak modal ke stop loss)</span>
+      </div>
+      <div class="expectancy" id="expectancyBox"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">02</span>Ukuran Posisi dari Harga</h2>
+      <div class="row">
+        <div class="field">
+          <label>Harga Entry</label>
+          <input type="number" id="inEntry" step="any" placeholder="mis. 63500" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Harga Stop Loss</label>
+          <input type="number" id="inSL" step="any" placeholder="mis. 62800" oninput="calc()">
+        </div>
+      </div>
+      <div class="expectancy" id="positionBox">Isi harga entry &amp; stop loss untuk menghitung jumlah unit/koin yang aman dibeli.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">03</span>Simulasi Losing Streak Beruntun</h2>
+      <div id="streakTable"></div>
+      <div class="foot-note">Dihitung dengan compounding — risiko dihitung ulang dari modal tersisa tiap kali kalah, sesuai risiko per trade di atas.</div>
+    </div>
+
+  </section>
+
+  <!-- ===================== TAB: JURNAL ===================== -->
+  <section id="view-journal" class="view">
+
+    <div class="card">
+      <h2><span class="n">—</span>Ringkasan Performa</h2>
+      <div class="stat-grid" id="statGrid"></div>
+      <svg id="chart" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
+      <div class="beads" id="beadsRow"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">+</span>Tambah Trade</h2>
+      <div class="row">
+        <div class="field">
+          <label>Tanggal</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field">
+          <label>Pair / Aset</label>
+          <input type="text" id="fPair" placeholder="mis. BTCUSDT">
+        </div>
+        <div class="field">
+          <label>Arah</label>
+          <select id="fDir">
+            <option value="Long">Long</option>
+            <option value="Short">Short</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Hasil</label>
+          <select id="fResult" onchange="onResultChange()">
+            <option value="win">Menang</option>
+            <option value="loss">Kalah</option>
+            <option value="be">Break Even</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>R Multiple</label>
+          <input type="number" id="fR" step="0.1" value="1">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="flex:3;">
+          <label>Alasan Entry / Catatan Evaluasi</label>
+          <textarea id="fNote" placeholder="Setup apa yang terpenuhi? Apa yang bisa dievaluasi dari trade ini?"></textarea>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="primary" onclick="addEntry()">Simpan Trade</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top-actions">
+        <h2 style="margin:0"><span class="n">≡</span>Riwayat Trade</h2>
+        <div class="actions-group">
+          <button class="ghost" onclick="exportCSV()">⤓ Export CSV</button>
+          <button class="ghost" onclick="resetAll()">Hapus semua</button>
+        </div>
+      </div>
+      <div id="journalTableWrap"></div>
+    </div>
+
+  </section>
+
+  <div class="foot-note" style="text-align:center;margin-top:20px;">
+    Alat bantu evaluasi, bukan sinyal atau saran finansial. Keputusan trading tetap tanggung jawab kamu sepenuhnya.
+  </div>
+</div>
+
+<script>
+let entries = [];
+let settings = { modal:100, risk:1, rr:1, wr:70 };
+let theme = 'dark';
+
+// ---------- theme ----------
+function setTheme(t){
+  theme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('btnDark').classList.toggle('active', t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  try{ window.storage.set('theme', t); }catch(e){}
+}
+
+// ---------- storage ----------
+async function loadData(){
+  try{
+    const th = await window.storage.get('theme');
+    if(th && th.value) theme = th.value;
+  }catch(e){}
+  setTheme(theme);
+
+  try{
+    const s = await window.storage.get('settings');
+    if(s && s.value) settings = JSON.parse(s.value);
+  }catch(e){}
+  try{
+    const e = await window.storage.get('entries');
+    if(e && e.value) entries = JSON.parse(e.value);
+  }catch(e){}
+  document.getElementById('inModal').value = settings.modal;
+  document.getElementById('inRisk').value = settings.risk;
+  document.getElementById('inRR').value = settings.rr;
+  document.getElementById('inWR').value = settings.wr;
+  document.getElementById('fDate').valueAsDate = new Date();
+  highlightPreset();
+  calc();
+  renderJournal();
+}
+async function saveSettings(){
+  try{ await window.storage.set('settings', JSON.stringify(settings)); }catch(e){}
+}
+async function saveEntries(){
+  try{ await window.storage.set('entries', JSON.stringify(entries)); }catch(e){}
+}
+
+// ---------- tabs ----------
+function switchTab(t){
+  document.getElementById('view-calc').classList.toggle('active', t==='calc');
+  document.getElementById('view-journal').classList.toggle('active', t==='journal');
+  document.getElementById('tabBtnCalc').classList.toggle('active', t==='calc');
+  document.getElementById('tabBtnJournal').classList.toggle('active', t==='journal');
+  if(t==='journal') renderJournal();
+}
+
+function setRisk(v){
+  document.getElementById('inRisk').value = v;
+  calc();
+}
+function highlightPreset(){
+  const r = parseFloat(document.getElementById('inRisk').value);
+  document.querySelectorAll('.preset').forEach(b=>{
+    b.classList.toggle('on', parseFloat(b.textContent) === r);
+  });
+}
+
+// ---------- calculator ----------
+function calc(){
+  const modal = parseFloat(document.getElementById('inModal').value) || 0;
+  const risk = parseFloat(document.getElementById('inRisk').value) || 0;
+  const rr = parseFloat(document.getElementById('inRR').value) || 1;
+  const wr = parseFloat(document.getElementById('inWR').value) || 0;
+
+  settings = {modal, risk, rr, wr};
+  saveSettings();
+  highlightPreset();
+
+  const riskAmt = modal * (risk/100);
+  document.getElementById('riskAmt').textContent = '$' + riskAmt.toFixed(2);
+
+  const w = wr/100, l = 1-wr/100;
+  const expectR = (w*rr) - (l*1);
+  const expectDollar = expectR * riskAmt;
+  const dir = expectR >= 0 ? 'positif' : 'negatif';
+  document.getElementById('expectancyBox').innerHTML =
+    `Expectancy sistem: <b>${expectR>=0?'+':''}${expectR.toFixed(2)}R</b> per trade `+
+    `(≈ <b>${expectDollar>=0?'+':''}$${expectDollar.toFixed(2)}</b> pada risiko saat ini) — edge ${dir}.`;
+
+  const entry = parseFloat(document.getElementById('inEntry').value);
+  const sl = parseFloat(document.getElementById('inSL').value);
+  const posBox = document.getElementById('positionBox');
+  if(entry && sl && entry !== sl){
+    const distPct = Math.abs(entry - sl) / entry;
+    const units = riskAmt / Math.abs(entry - sl);
+    const notional = units * entry;
+    posBox.innerHTML = `Jarak SL: <b>${(distPct*100).toFixed(2)}%</b> dari entry &nbsp;·&nbsp; `+
+      `Jumlah unit aman: <b>${units.toFixed(6)}</b> &nbsp;·&nbsp; Nilai posisi: <b>$${notional.toFixed(2)}</b>`+
+      (notional > modal ? `<br><span style="color:var(--brick)">⚠ Nilai posisi melebihi modal — leverage dibutuhkan atau perbesar jarak SL.</span>` : '');
+  } else {
+    posBox.textContent = 'Isi harga entry & stop loss untuk menghitung jumlah unit/koin yang aman dibeli.';
+  }
+
+  let rows = '';
+  let m = modal;
+  rows += `<table><thead><tr><th>Kalah ke-</th><th>Risiko saat itu</th><th>Sisa modal</th><th>Drawdown</th><th>Gain balik modal</th></tr></thead><tbody>`;
+  for(let i=1;i<=5;i++){
+    const r = m * (risk/100);
+    m = m - r;
+    const dd = (1 - m/modal) * 100;
+    const recov = (modal/m - 1) * 100;
+    rows += `<tr><td>${i}x</td><td>$${r.toFixed(2)}</td><td>$${m.toFixed(2)}</td>`+
+      `<td>${dd.toFixed(1)}%</td><td>${recov.toFixed(1)}%</td></tr>`;
+  }
+  rows += `</tbody></table>`;
+  document.getElementById('streakTable').innerHTML = rows;
+}
+
+// ---------- journal ----------
+function onResultChange(){
+  const res = document.getElementById('fResult').value;
+  const rInput = document.getElementById('fR');
+  const rr = parseFloat(document.getElementById('inRR').value) || 1;
+  if(res === 'win') rInput.value = rr;
+  else if(res === 'loss') rInput.value = -1;
+  else rInput.value = 0;
+}
+
+function addEntry(){
+  const date = document.getElementById('fDate').value || new Date().toISOString().slice(0,10);
+  const pair = document.getElementById('fPair').value.trim() || '—';
+  const dir = document.getElementById('fDir').value;
+  const result = document.getElementById('fResult').value;
+  const r = parseFloat(document.getElementById('fR').value) || 0;
+  const note = document.getElementById('fNote').value.trim();
+
+  entries.push({ id: Date.now(), date, pair, dir, result, r, note });
+  entries.sort((a,b)=> a.date.localeCompare(b.date));
+  saveEntries();
+
+  document.getElementById('fPair').value = '';
+  document.getElementById('fNote').value = '';
+  document.getElementById('fResult').value = 'win';
+  onResultChange();
+
+  renderJournal();
+}
+
+function deleteEntry(id){
+  entries = entries.filter(e => e.id !== id);
+  saveEntries();
+  renderJournal();
+}
+
+async function resetAll(){
+  if(!confirm('Hapus semua riwayat trade? Tindakan ini tidak bisa dibatalkan.')) return;
+  entries = [];
+  await saveEntries();
+  renderJournal();
+}
+
+function csvEscape(val){
+  const s = String(val ?? '');
+  if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+function exportCSV(){
+  if(entries.length === 0){ alert('Belum ada trade untuk diekspor.'); return; }
+  const headers = ['Tanggal','Pair','Arah','Hasil','R Multiple','Catatan'];
+  const resultLabel = {win:'Menang', loss:'Kalah', be:'Break Even'};
+  const lines = [headers.join(',')];
+  entries.forEach(e=>{
+    lines.push([
+      csvEscape(e.date),
+      csvEscape(e.pair),
+      csvEscape(e.dir),
+      csvEscape(resultLabel[e.result] || e.result),
+      csvEscape(e.r),
+      csvEscape(e.note)
+    ].join(','));
+  });
+  const csvContent = '\uFEFF' + lines.join('\n');
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `jurnal-trading-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function computeStats(){
+  const total = entries.length;
+  const wins = entries.filter(e=>e.result==='win').length;
+  const losses = entries.filter(e=>e.result==='loss').length;
+  const winrate = total ? (wins/(wins+losses||1))*100 : 0;
+  const sumR = entries.reduce((a,e)=>a+e.r,0);
+  const expectancy = total ? sumR/total : 0;
+
+  let curStreak = 0, curType = null;
+  for(let i=entries.length-1;i>=0;i--){
+    const t = entries[i].result;
+    if(t==='be') break;
+    if(curType===null){ curType=t; curStreak=1; }
+    else if(t===curType){ curStreak++; }
+    else break;
+  }
+
+  let cum = 0;
+  const curve = entries.map(e=>{ cum += e.r; return cum; });
+
+  return {total, wins, losses, winrate, expectancy, curStreak, curType, curve};
+}
+
+function renderJournal(){
+  const s = computeStats();
+  const grid = document.getElementById('statGrid');
+  grid.innerHTML = `
+    <div class="stat neu"><div class="v">${s.winrate.toFixed(0)}%</div><div class="k">Winrate</div></div>
+    <div class="stat ${s.expectancy>=0?'pos':'neg'}"><div class="v">${s.expectancy>=0?'+':''}${s.expectancy.toFixed(2)}R</div><div class="k">Expectancy/Trade</div></div>
+    <div class="stat neu"><div class="v">${s.total}</div><div class="k">Total Trade</div></div>
+    <div class="stat ${s.curType==='loss' && s.curStreak>0 ? 'neg':'pos'}"><div class="v">${s.curStreak||0}${s.curType==='loss'?' K':s.curType==='win'?' M':''}</div><div class="k">Streak Berjalan</div></div>
+  `;
+
+  drawChart(s.curve);
+
+  const beads = document.getElementById('beadsRow');
+  beads.innerHTML = entries.slice(-40).map(e=>{
+    const cls = e.result==='win' ? 'win' : e.result==='loss' ? 'loss' : 'be';
+    return `<span class="bead ${cls}" title="${e.date} ${e.pair}"></span>`;
+  }).join('');
+
+  const wrap = document.getElementById('journalTableWrap');
+  if(entries.length === 0){
+    wrap.innerHTML = `<div class="empty">Belum ada trade tercatat. Tambahkan trade pertamamu di atas.</div>`;
+    return;
+  }
+  let rows = entries.slice().reverse().map(e=>{
+    const tagClass = e.result==='win' ? 'win' : e.result==='loss' ? 'loss' : '';
+    const tagText = e.result==='win' ? 'Menang' : e.result==='loss' ? 'Kalah' : 'BE';
+    return `<tr>
+      <td>${e.date}</td>
+      <td>${e.pair}</td>
+      <td>${e.dir}</td>
+      <td><span class="tag ${tagClass}">${tagText}</span></td>
+      <td>${e.r>=0?'+':''}${e.r}R</td>
+      <td style="max-width:220px;white-space:normal;color:var(--ink-dim);">${e.note||''}</td>
+      <td><button class="del" onclick="deleteEntry(${e.id})">Hapus</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table>
+    <thead><tr><th>Tanggal</th><th>Pair</th><th>Arah</th><th>Hasil</th><th>R</th><th>Catatan</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function drawChart(curve){
+  const svg = document.getElementById('chart');
+  const w = 600, h = 120, pad = 10;
+  const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--rule').trim();
+  const zeroColor = getComputedStyle(document.documentElement).getPropertyValue('--ink-faint').trim();
+  if(curve.length < 2){
+    svg.innerHTML = `<text x="10" y="60" fill="${zeroColor}" font-size="12" font-family="IBM Plex Mono">Belum cukup data untuk kurva ekuitas.</text>`;
+    return;
+  }
+  const min = Math.min(0, ...curve);
+  const max = Math.max(0, ...curve);
+  const range = (max - min) || 1;
+  const stepX = (w - pad*2) / (curve.length - 1);
+  const pts = curve.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - ((v - min)/range) * (h - pad*2);
+    return `${x},${y}`;
+  }).join(' ');
+  const zeroY = h - pad - ((0 - min)/range) * (h - pad*2);
+
+  let gridLines = '';
+  for(let i=0;i<=4;i++){
+    const y = pad + i*((h-pad*2)/4);
+    gridLines += `<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="2,3"/>`;
+  }
+
+  svg.innerHTML = `
+    ${gridLines}
+    <line x1="${pad}" y1="${zeroY}" x2="${w-pad}" y2="${zeroY}" stroke="${zeroColor}" stroke-width="1"/>
+    <polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="2.5"/>
+  `;
+}
+
+loadData();
+</script>
+</body>
+</html>
