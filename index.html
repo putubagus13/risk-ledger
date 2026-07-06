@@ -413,6 +413,19 @@
         font-family: "IBM Plex Mono", monospace;
         font-size: 12px;
       }
+      .thumb {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        object-fit: cover;
+        border: 1px solid var(--rule);
+        cursor: pointer;
+        display: block;
+      }
+      .thumb-empty {
+        color: var(--ink-faint);
+        font-size: 11px;
+      }
       .empty {
         text-align: center;
         padding: 34px 10px;
@@ -646,6 +659,18 @@
                 placeholder="Setup apa yang terpenuhi? Apa yang bisa dievaluasi dari trade ini?"
               ></textarea>
             </div>
+            <div class="field" style="flex: 2">
+              <label>URL Foto Chart (opsional)</label>
+              <input
+                type="text"
+                id="fPhoto"
+                placeholder="Link Google Drive / gambar"
+              />
+            </div>
+          </div>
+          <div class="foot-note" style="margin-top: 6px">
+            Untuk link Google Drive: klik kanan file → Bagikan → set akses ke
+            "Siapa saja yang memiliki link", lalu tempel link tersebut di sini.
           </div>
           <div style="margin-top: 12px">
             <button class="primary" onclick="addEntry()">Simpan Trade</button>
@@ -835,6 +860,18 @@
         else rInput.value = 0;
       }
 
+      function toImageUrl(url) {
+        if (!url) return "";
+        url = url.trim();
+        const m =
+          url.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+          url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (m && url.includes("drive.google.com")) {
+          return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+        }
+        return url;
+      }
+
       function addEntry() {
         const date =
           document.getElementById("fDate").value ||
@@ -844,13 +881,24 @@
         const result = document.getElementById("fResult").value;
         const r = parseFloat(document.getElementById("fR").value) || 0;
         const note = document.getElementById("fNote").value.trim();
+        const photo = document.getElementById("fPhoto").value.trim();
 
-        entries.push({ id: Date.now(), date, pair, dir, result, r, note });
+        entries.push({
+          id: Date.now(),
+          date,
+          pair,
+          dir,
+          result,
+          r,
+          note,
+          photo,
+        });
         entries.sort((a, b) => a.date.localeCompare(b.date));
         saveEntries();
 
         document.getElementById("fPair").value = "";
         document.getElementById("fNote").value = "";
+        document.getElementById("fPhoto").value = "";
         document.getElementById("fResult").value = "win";
         onResultChange();
 
@@ -892,6 +940,7 @@
           "Hasil",
           "R Multiple",
           "Catatan",
+          "URL Foto",
         ];
         const resultLabel = { win: "Menang", loss: "Kalah", be: "Break Even" };
         const lines = [headers.join(",")];
@@ -904,6 +953,7 @@
               csvEscape(resultLabel[e.result] || e.result),
               csvEscape(e.r),
               csvEscape(e.note),
+              csvEscape(e.photo),
             ].join(",")
           );
         });
@@ -1012,6 +1062,15 @@
                 : e.result === "loss"
                 ? "Kalah"
                 : "BE";
+            const photoCell = e.photo
+              ? `<img class="thumb" src="${toImageUrl(
+                  e.photo
+                )}" onclick="window.open('${
+                  e.photo
+                }','_blank')" alt="chart" onerror="this.replaceWith(Object.assign(document.createElement('a'),{href:'${
+                  e.photo
+                }',target:'_blank',textContent:'Buka link',className:'thumb-empty'}))">`
+              : `<span class="thumb-empty">—</span>`;
             return `<tr>
       <td>${e.date}</td>
       <td>${e.pair}</td>
@@ -1021,12 +1080,13 @@
       <td style="max-width:220px;white-space:normal;color:var(--ink-dim);">${
         e.note || ""
       }</td>
+      <td>${photoCell}</td>
       <td><button class="del" onclick="deleteEntry(${e.id})">Hapus</button></td>
     </tr>`;
           })
           .join("");
         wrap.innerHTML = `<table>
-    <thead><tr><th>Tanggal</th><th>Pair</th><th>Arah</th><th>Hasil</th><th>R</th><th>Catatan</th><th></th></tr></thead>
+    <thead><tr><th>Tanggal</th><th>Pair</th><th>Arah</th><th>Hasil</th><th>R</th><th>Catatan</th><th>Foto</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
       }
