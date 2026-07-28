@@ -233,6 +233,19 @@
         display: flex;
         gap: 8px;
         margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .preset-row.sub-row {
+        margin-top: 6px;
+      }
+      .preset-group-label {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 14px;
+        margin-bottom: -2px;
       }
       .preset {
         font-family: "IBM Plex Mono", monospace;
@@ -528,9 +541,9 @@
               />
             </div>
             <div class="field">
-              <label>Risk : Reward</label>
+              <label>Risk : Reward (1 : x)</label>
               <input
-                type="text"
+                type="number"
                 id="inRR"
                 value="1"
                 min="0.1"
@@ -551,11 +564,22 @@
               />
             </div>
           </div>
+
+          <div class="preset-group-label">Preset Risiko</div>
           <div class="preset-row" id="presetRow">
             <button class="preset" onclick="setRisk(1)">1%</button>
             <button class="preset" onclick="setRisk(2)">2%</button>
             <button class="preset" onclick="setRisk(3)">3%</button>
             <button class="preset" onclick="setRisk(5)">5%</button>
+          </div>
+
+          <div class="preset-group-label">Preset Risk : Reward</div>
+          <div class="preset-row" id="rrPresetRow">
+            <button class="preset" onclick="setRR(1)">1:1</button>
+            <button class="preset" onclick="setRR(1.5)">1:1.5</button>
+            <button class="preset" onclick="setRR(2)">1:2</button>
+            <button class="preset" onclick="setRR(3)">1:3</button>
+            <button class="preset" onclick="setRR(5)">1:5</button>
           </div>
 
           <div class="result-big">
@@ -593,7 +617,8 @@
           </div>
           <div class="expectancy" id="positionBox">
             Isi harga entry &amp; stop loss untuk menghitung jumlah unit/koin
-            yang aman dibeli.
+            yang aman dibeli, plus target take-profit sesuai Risk:Reward di
+            atas.
           </div>
         </div>
 
@@ -775,10 +800,19 @@
         document.getElementById("inRisk").value = v;
         calc();
       }
+      function setRR(v) {
+        document.getElementById("inRR").value = v;
+        calc();
+      }
       function highlightPreset() {
         const r = parseFloat(document.getElementById("inRisk").value);
-        document.querySelectorAll(".preset").forEach((b) => {
+        document.querySelectorAll("#presetRow .preset").forEach((b) => {
           b.classList.toggle("on", parseFloat(b.textContent) === r);
+        });
+        const rr = parseFloat(document.getElementById("inRR").value);
+        document.querySelectorAll("#rrPresetRow .preset").forEach((b) => {
+          const val = parseFloat(b.textContent.split(":")[1]);
+          b.classList.toggle("on", val === rr);
         });
       }
 
@@ -805,7 +839,7 @@
         document.getElementById("expectancyBox").innerHTML =
           `Expectancy sistem: <b>${expectR >= 0 ? "+" : ""}${expectR.toFixed(
             2
-          )}R</b> per trade ` +
+          )}R</b> per trade (Risk:Reward 1:${rr}) ` +
           `(≈ <b>${expectDollar >= 0 ? "+" : ""}$${expectDollar.toFixed(
             2
           )}</b> pada risiko saat ini) — edge ${dir}.`;
@@ -814,22 +848,36 @@
         const sl = parseFloat(document.getElementById("inSL").value);
         const posBox = document.getElementById("positionBox");
         if (entry && sl && entry !== sl) {
-          const distPct = Math.abs(entry - sl) / entry;
-          const units = riskAmt / Math.abs(entry - sl);
+          const distAbs = Math.abs(entry - sl);
+          const distPct = distAbs / entry;
+          const units = riskAmt / distAbs;
           const notional = units * entry;
+          const isLong = entry > sl;
+          const tp = isLong ? entry + distAbs * rr : entry - distAbs * rr;
+          const rewardDollar = riskAmt * rr;
+          const tpDecimals = entry < 1 ? 8 : entry < 100 ? 4 : 2;
           posBox.innerHTML =
-            `Jarak SL: <b>${(distPct * 100).toFixed(
+            `Arah terdeteksi: <b>${
+              isLong ? "Long" : "Short"
+            }</b> &nbsp;·&nbsp; Jarak SL: <b>${(distPct * 100).toFixed(
               2
-            )}%</b> dari entry &nbsp;·&nbsp; ` +
+            )}%</b> dari entry<br>` +
             `Jumlah unit aman: <b>${units.toFixed(
               6
-            )}</b> &nbsp;·&nbsp; Nilai posisi: <b>$${notional.toFixed(2)}</b>` +
+            )}</b> &nbsp;·&nbsp; Nilai posisi: <b>$${notional.toFixed(
+              2
+            )}</b><br>` +
+            `Target Take-Profit (1:${rr}): <b>${tp.toFixed(
+              tpDecimals
+            )}</b> &nbsp;·&nbsp; Potensi profit: <b>$${rewardDollar.toFixed(
+              2
+            )}</b>` +
             (notional > modal
               ? `<br><span style="color:var(--brick)">⚠ Nilai posisi melebihi modal — leverage dibutuhkan atau perbesar jarak SL.</span>`
               : "");
         } else {
-          posBox.textContent =
-            "Isi harga entry & stop loss untuk menghitung jumlah unit/koin yang aman dibeli.";
+          posBox.innerHTML =
+            "Isi harga entry &amp; stop loss untuk menghitung jumlah unit/koin yang aman dibeli, plus target take-profit sesuai Risk:Reward di atas.";
         }
 
         let rows = "";
