@@ -97,6 +97,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
       }
 
       .theme-toggle {
@@ -466,10 +467,110 @@
       .actions-group {
         display: flex;
         gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      /* ---------- backtest ---------- */
+      .bt-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+      .bt-card {
+        background: var(--panel);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: border-color 0.15s;
+      }
+      .bt-card:hover {
+        border-color: var(--accent);
+      }
+      .bt-card h3 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 16px;
+        margin: 0 0 3px;
+      }
+      .bt-meta {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        color: var(--ink-faint);
+        margin-bottom: 12px;
+      }
+      .bt-mini {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .bt-mini div {
+        background: var(--panel-2);
+        border-radius: 8px;
+        padding: 8px;
+      }
+      .bt-mini b {
+        display: block;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 15px;
+      }
+      .bt-mini span {
+        font-size: 9.5px;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .pos-t {
+        color: var(--sage);
+      }
+      .neg-t {
+        color: var(--brick);
+      }
+      .rec-box {
+        background: var(--accent-soft);
+        border: 1px solid var(--accent);
+        border-radius: 10px;
+        padding: 14px;
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 14px;
+      }
+      .rec-box.bad {
+        background: var(--brick-soft);
+        border-color: var(--brick);
+      }
+      .warn {
+        font-size: 12px;
+        color: var(--brick);
+        margin-top: 8px;
+      }
+      tr.best td {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .barwrap {
+        width: 80px;
+        height: 6px;
+        background: var(--panel-2);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .barwrap i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+      }
+      .tbl-scroll {
+        overflow-x: auto;
       }
       @media (max-width: 640px) {
         .stat-grid {
           grid-template-columns: repeat(2, 1fr);
+        }
+        .bt-grid {
+          grid-template-columns: 1fr;
         }
         h1 {
           font-size: 23px;
@@ -507,6 +608,9 @@
             </button>
             <button id="tabBtnJournal" onclick="switchTab('journal')">
               JURNAL
+            </button>
+            <button id="tabBtnBacktest" onclick="switchTab('backtest')">
+              BACKTEST
             </button>
           </nav>
         </div>
@@ -714,6 +818,11 @@
         </div>
       </section>
 
+      <!-- ===================== TAB: BACKTEST ===================== -->
+      <section id="view-backtest" class="view">
+        <div id="btRoot"></div>
+      </section>
+
       <div class="foot-note" style="text-align: center; margin-top: 20px">
         Alat bantu evaluasi, bukan sinyal atau saran finansial. Keputusan
         trading tetap tanggung jawab kamu sepenuhnya.
@@ -724,6 +833,8 @@
       let entries = [];
       let settings = { modal: 100, risk: 1, rr: 1, wr: 70 };
       let theme = "dark";
+      let backtests = [];
+      let btOpen = null;
 
       // ---------- theme ----------
       function setTheme(t) {
@@ -756,6 +867,10 @@
           const e = localStorage.getItem("risk-ledger-entries");
           if (e) entries = JSON.parse(e);
         } catch (e) {}
+        try {
+          const b = localStorage.getItem("risk-ledger-backtests");
+          if (b) backtests = JSON.parse(b);
+        } catch (e) {}
         document.getElementById("inModal").value = settings.modal;
         document.getElementById("inRisk").value = settings.risk;
         document.getElementById("inRR").value = settings.rr;
@@ -764,6 +879,7 @@
         highlightPreset();
         calc();
         renderJournal();
+        renderBT();
       }
       function saveSettings() {
         try {
@@ -778,22 +894,29 @@
           localStorage.setItem("risk-ledger-entries", JSON.stringify(entries));
         } catch (e) {}
       }
+      function saveBT() {
+        try {
+          localStorage.setItem(
+            "risk-ledger-backtests",
+            JSON.stringify(backtests)
+          );
+        } catch (e) {}
+      }
 
       // ---------- tabs ----------
       function switchTab(t) {
-        document
-          .getElementById("view-calc")
-          .classList.toggle("active", t === "calc");
-        document
-          .getElementById("view-journal")
-          .classList.toggle("active", t === "journal");
-        document
-          .getElementById("tabBtnCalc")
-          .classList.toggle("active", t === "calc");
-        document
-          .getElementById("tabBtnJournal")
-          .classList.toggle("active", t === "journal");
+        ["calc", "journal", "backtest"].forEach((k) => {
+          document
+            .getElementById("view-" + k)
+            .classList.toggle("active", t === k);
+          document
+            .getElementById(
+              "tabBtn" + { calc: "Calc", journal: "Journal", backtest: "Backtest" }[k]
+            )
+            .classList.toggle("active", t === k);
+        });
         if (t === "journal") renderJournal();
+        if (t === "backtest") renderBT();
       }
 
       function setRisk(v) {
@@ -976,6 +1099,20 @@
         if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
         return s;
       }
+      function downloadCSV(lines, filename) {
+        const csvContent = "\uFEFF" + lines.join("\n");
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
       function exportCSV() {
         if (entries.length === 0) {
           alert("Belum ada trade untuk diekspor.");
@@ -1005,19 +1142,8 @@
             ].join(",")
           );
         });
-        const csvContent = "\uFEFF" + lines.join("\n");
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
         const stamp = new Date().toISOString().slice(0, 10);
-        a.href = url;
-        a.download = `jurnal-trading-${stamp}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadCSV(lines, `jurnal-trading-${stamp}.csv`);
       }
 
       function computeStats() {
@@ -1185,6 +1311,494 @@
         }" y2="${zeroY}" stroke="${zeroColor}" stroke-width="1"/>
     <polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="2.5"/>
   `;
+      }
+
+      // =====================================================
+      // ================== BACKTEST =========================
+      // =====================================================
+      const RR_LIST = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5];
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+        );
+      const fmt = (v, d = 2) => (v >= 0 ? "+" : "") + v.toFixed(d);
+      const cls = (v) => (v >= 0 ? "pos-t" : "neg-t");
+      const resLabel = { win: "Menang", loss: "Kalah", be: "Break Even" };
+
+      // MFE = R maksimum yang sempat dicapai harga sebelum balik / kena SL.
+      // Kalau kosong: menang -> sama dengan R hasil, selain itu 0.
+      function mfeOf(t) {
+        return t.mfe !== null && t.mfe !== undefined && t.mfe !== ""
+          ? Number(t.mfe)
+          : t.result === "win"
+          ? t.r
+          : 0;
+      }
+
+      function wilson(wins, n) {
+        if (!n) return [0, 0];
+        const z = 1.96,
+          p = wins / n,
+          d = 1 + (z * z) / n;
+        const c = (p + (z * z) / (2 * n)) / d;
+        const h =
+          (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
+        return [Math.max(0, c - h) * 100, Math.min(1, c + h) * 100];
+      }
+
+      function btStats(trades) {
+        const n = trades.length;
+        const wins = trades.filter((t) => t.result === "win").length;
+        const losses = trades.filter((t) => t.result === "loss").length;
+        const be = n - wins - losses;
+        const decided = wins + losses;
+        const wr = decided ? wins / decided : 0;
+        const sumR = trades.reduce((a, t) => a + t.r, 0);
+        const gp = trades.filter((t) => t.r > 0).reduce((a, t) => a + t.r, 0);
+        const gl = Math.abs(
+          trades.filter((t) => t.r < 0).reduce((a, t) => a + t.r, 0)
+        );
+        let maxW = 0,
+          maxL = 0,
+          cw = 0,
+          cl = 0,
+          cum = 0,
+          peak = 0,
+          maxDD = 0;
+        trades.forEach((t) => {
+          if (t.result === "win") {
+            cw++;
+            cl = 0;
+          } else if (t.result === "loss") {
+            cl++;
+            cw = 0;
+          } else {
+            cw = 0;
+            cl = 0;
+          }
+          maxW = Math.max(maxW, cw);
+          maxL = Math.max(maxL, cl);
+          cum += t.r;
+          peak = Math.max(peak, cum);
+          maxDD = Math.max(maxDD, peak - cum);
+        });
+        const [lo, hi] = wilson(wins, decided);
+
+        // Monte Carlo: 1000x simulasi 100 trade, resampling dari R tercatat
+        let mcProfit = null,
+          mcMedian = null;
+        if (n >= 5) {
+          const res = [];
+          for (let s = 0; s < 1000; s++) {
+            let tot = 0;
+            for (let i = 0; i < 100; i++)
+              tot += trades[Math.floor(Math.random() * n)].r;
+            res.push(tot);
+          }
+          res.sort((a, b) => a - b);
+          mcProfit = (res.filter((x) => x > 0).length / res.length) * 100;
+          mcMedian = res[500];
+        }
+        return {
+          n,
+          wins,
+          losses,
+          be,
+          wr: wr * 100,
+          lo,
+          hi,
+          sumR,
+          exp: n ? sumR / n : 0,
+          pf: gl ? gp / gl : gp ? Infinity : 0,
+          maxW,
+          maxL,
+          maxDD,
+          p3: Math.pow(1 - wr, 3) * 100,
+          p5: Math.pow(1 - wr, 5) * 100,
+          mcProfit,
+          mcMedian,
+        };
+      }
+
+      // Simulasi ulang setiap trade dengan target R:R tertentu.
+      // Asumsi: MFE >= target -> kena TP (+RR). Break even tetap 0. Sisanya kena SL (-1R).
+      function simRR(trades, rr, riskPct) {
+        let w = 0,
+          l = 0,
+          b = 0,
+          sum = 0,
+          eq = 1;
+        trades.forEach((t) => {
+          let r;
+          if (mfeOf(t) >= rr) {
+            w++;
+            r = rr;
+          } else if (t.result === "be") {
+            b++;
+            r = 0;
+          } else {
+            l++;
+            r = -1;
+          }
+          sum += r;
+          eq *= 1 + (r * riskPct) / 100;
+        });
+        const n = trades.length;
+        return {
+          rr,
+          w,
+          l,
+          b,
+          wr: n ? (w / n) * 100 : 0,
+          total: sum,
+          exp: n ? sum / n : 0,
+          profitPct: sum * riskPct,
+          compPct: (eq - 1) * 100,
+        };
+      }
+
+      function btOf(id) {
+        return backtests.find((b) => b.id === id);
+      }
+
+      function renderBT() {
+        const root = $("btRoot");
+        const bt = btOf(btOpen);
+        if (!bt) {
+          btOpen = null;
+          renderBTList(root);
+        } else renderBTDetail(root, bt);
+      }
+
+      // ---------- list ----------
+      function renderBTList(root) {
+        const cards = backtests
+          .map((b) => {
+            const s = btStats(b.trades);
+            const trs = RR_LIST.map((rr) => simRR(b.trades, rr, settings.risk));
+            const best = b.trades.length
+              ? trs.reduce((a, c) => (c.total > a.total ? c : a))
+              : null;
+            return `<div class="bt-card" onclick="openBT(${b.id})">
+          <h3>${esc(b.title)}</h3>
+          <div class="bt-meta">${esc(b.pair || "—")} · dibuat ${esc(
+              b.created
+            )}</div>
+          <div class="bt-mini">
+            <div><b>${s.n}</b><span>Trade</span></div>
+            <div><b>${s.wr.toFixed(0)}%</b><span>Winrate</span></div>
+            <div><b class="${cls(s.sumR)}">${fmt(s.sumR, 1)}R</b><span>Total R</span></div>
+          </div>
+          <div class="foot-note" style="margin:0 0 10px">${
+            best && best.total > 0
+              ? `Rekomendasi R:R terbaik: <b style="color:var(--accent)">1:${best.rr}</b>`
+              : "Belum ada rekomendasi R:R"
+          }</div>
+          <div class="actions-group" onclick="event.stopPropagation()">
+            <button class="ghost" onclick="openBT(${b.id})">Buka</button>
+            <button class="ghost" onclick="dupBT(${b.id})">Duplikat</button>
+            <button class="ghost" onclick="exportBT(${b.id})">⤓ CSV</button>
+          </div>
+        </div>`;
+          })
+          .join("");
+        root.innerHTML = `
+      <div class="card">
+        <h2><span class="n">+</span>Backtest Baru</h2>
+        <div class="row">
+          <div class="field" style="flex:2"><label>Judul Backtest</label>
+            <input type="text" id="btTitle" placeholder="mis. Breakout EMA 20 — BTC 1H" /></div>
+          <div class="field"><label>Pair / Timeframe</label>
+            <input type="text" id="btPair" placeholder="mis. BTCUSDT 1H" /></div>
+        </div>
+        <div style="margin-top:12px"><button class="primary" onclick="createBT()">Buat Backtest</button></div>
+      </div>
+      <div class="top-actions">
+        <h2 style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:16px">Daftar Backtest (${backtests.length})</h2>
+        <button class="ghost" onclick="exportAllBT()">⤓ CSV Semua</button>
+      </div>
+      ${
+        backtests.length
+          ? `<div class="bt-grid">${cards}</div>`
+          : `<div class="card"><div class="empty">Belum ada backtest. Buat yang pertama di atas.</div></div>`
+      }`;
+      }
+
+      function createBT() {
+        const title = $("btTitle").value.trim();
+        if (!title) {
+          alert("Isi judul backtest dulu.");
+          return;
+        }
+        const b = {
+          id: Date.now(),
+          title,
+          pair: $("btPair").value.trim(),
+          created: new Date().toISOString().slice(0, 10),
+          trades: [],
+        };
+        backtests.unshift(b);
+        saveBT();
+        btOpen = b.id;
+        renderBT();
+      }
+      function openBT(id) {
+        btOpen = id;
+        renderBT();
+        window.scrollTo(0, 0);
+      }
+      function closeBT() {
+        btOpen = null;
+        renderBT();
+      }
+      function dupBT(id) {
+        const src = btOf(id);
+        if (!src) return;
+        const stamp = Date.now();
+        const copy = {
+          ...src,
+          id: stamp,
+          title: src.title + " (salinan)",
+          created: new Date().toISOString().slice(0, 10),
+          trades: src.trades.map((t, i) => ({ ...t, id: stamp + i + 1 })),
+        };
+        backtests.unshift(copy);
+        saveBT();
+        renderBT();
+      }
+      function renameBT(id) {
+        const b = btOf(id);
+        const v = prompt("Judul backtest:", b.title);
+        if (v && v.trim()) {
+          b.title = v.trim();
+          saveBT();
+          renderBT();
+        }
+      }
+      function deleteBT(id) {
+        const b = btOf(id);
+        if (!confirm(`Hapus backtest "${b.title}" beserta datanya?`)) return;
+        backtests = backtests.filter((x) => x.id !== id);
+        saveBT();
+        btOpen = null;
+        renderBT();
+      }
+
+      // ---------- detail ----------
+      function renderBTDetail(root, b) {
+        const s = btStats(b.trades);
+        const risk = settings.risk;
+        const trs = RR_LIST.map((rr) => simRR(b.trades, rr, risk));
+        const best = trs.reduce((a, c) => (c.total > a.total ? c : a));
+        const maxTotal = Math.max(...trs.map((t) => t.total), 0.0001);
+
+        let rec;
+        if (!b.trades.length) {
+          rec = `<div class="rec-box">Tambahkan data trade untuk melihat rekomendasi R:R.</div>`;
+        } else if (best.total <= 0) {
+          rec = `<div class="rec-box bad"><b>Tidak ada R:R yang menghasilkan profit</b> pada data ini. Setup belum punya edge — evaluasi entry/SL sebelum dipakai live.</div>`;
+        } else {
+          rec = `<div class="rec-box">🎯 <b>R:R terbaik: 1:${best.rr}</b> — total <b>${fmt(
+            best.total,
+            1
+          )}R</b>, winrate ${best.wr.toFixed(0)}%, expectancy ${fmt(
+            best.exp
+          )}R/trade. Dengan risiko ${risk}% per trade ≈ <b>${fmt(
+            best.profitPct,
+            1
+          )}%</b> profit (compounding ${fmt(best.compPct, 1)}%).${
+            s.n < 30
+              ? `<div class="warn">⚠ Baru ${s.n} trade — minimal ±30 trade agar rekomendasi cukup andal.</div>`
+              : ""
+          }</div>`;
+        }
+
+        const rrRows = trs
+          .map(
+            (t) => `<tr class="${t === best && t.total > 0 ? "best" : ""}">
+          <td>1:${t.rr}</td><td>${t.wr.toFixed(0)}%</td><td>${fmt(t.exp)}R</td>
+          <td>${fmt(t.total, 1)}R</td><td>${fmt(t.profitPct, 1)}%</td>
+          <td><div class="barwrap"><i style="width:${Math.max(
+            0,
+            (t.total / maxTotal) * 100
+          )}%"></i></div></td></tr>`
+          )
+          .join("");
+
+        const tradeRows = b.trades
+          .slice()
+          .reverse()
+          .map(
+            (t) => `<tr>
+          <td>${esc(t.date)}</td>
+          <td><span class="tag ${t.result === "be" ? "" : t.result}">${resLabel[t.result]}</span></td>
+          <td>${fmt(t.r, 1)}R</td><td>${mfeOf(t)}R</td>
+          <td style="max-width:220px;white-space:normal;color:var(--ink-dim)">${esc(t.note)}</td>
+          <td><button class="del" onclick="delBTTrade(${b.id},${t.id})">Hapus</button></td></tr>`
+          )
+          .join("");
+
+        root.innerHTML = `
+      <div class="top-actions">
+        <button class="ghost" onclick="closeBT()">← Semua Backtest</button>
+        <div class="actions-group">
+          <button class="ghost" onclick="renameBT(${b.id})">Ubah Judul</button>
+          <button class="ghost" onclick="dupBT(${b.id});closeBT()">Duplikat</button>
+          <button class="ghost" onclick="exportBT(${b.id})">⤓ Export CSV</button>
+          <button class="ghost" onclick="deleteBT(${b.id})">Hapus</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">BT</span>${esc(b.title)}</h2>
+        <div class="bt-meta">${esc(b.pair || "—")} · dibuat ${esc(b.created)}</div>
+        <div class="stat-grid">
+          <div class="stat neu"><div class="v">${s.wr.toFixed(0)}%</div><div class="k">Winrate</div></div>
+          <div class="stat ${s.exp >= 0 ? "pos" : "neg"}"><div class="v">${fmt(s.exp)}R</div><div class="k">Expectancy</div></div>
+          <div class="stat ${s.sumR >= 0 ? "pos" : "neg"}"><div class="v">${fmt(s.sumR, 1)}R</div><div class="k">Total R</div></div>
+          <div class="stat neu"><div class="v">${s.n}</div><div class="k">Total Trade</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">%</span>Probabilitas</h2>
+        <div class="expectancy" style="border:none;margin:0;padding:0">
+          Menang <b>${s.wins}</b> · Kalah <b style="color:var(--brick)">${s.losses}</b> · BE <b style="color:var(--ink-dim)">${s.be}</b><br>
+          Winrate ${s.wr.toFixed(1)}% — rentang keyakinan 95%: <b>${s.lo.toFixed(0)}% – ${s.hi.toFixed(0)}%</b><br>
+          Profit factor: <b>${s.pf === Infinity ? "∞" : s.pf.toFixed(2)}</b> · Max drawdown: <b style="color:var(--brick)">${s.maxDD.toFixed(1)}R</b><br>
+          Streak menang terpanjang: <b>${s.maxW}</b> · Streak kalah terpanjang: <b style="color:var(--brick)">${s.maxL}</b><br>
+          Peluang kalah 3x beruntun: <b>${s.p3.toFixed(1)}%</b> · 5x beruntun: <b>${s.p5.toFixed(1)}%</b><br>
+          ${
+            s.mcProfit === null
+              ? `Simulasi Monte Carlo butuh minimal 5 trade.`
+              : `Monte Carlo (1000× simulasi, 100 trade): peluang profit <b>${s.mcProfit.toFixed(
+                  0
+                )}%</b>, hasil median <b>${fmt(s.mcMedian, 1)}R</b>`
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">R:R</span>Rekomendasi Risk : Reward</h2>
+        ${rec}
+        <div class="tbl-scroll"><table>
+          <thead><tr><th>R:R</th><th>Winrate</th><th>Expectancy</th><th>Total R</th><th>Profit @${risk}%</th><th></th></tr></thead>
+          <tbody>${rrRows}</tbody>
+        </table></div>
+        <div class="foot-note">Simulasi ulang tiap trade dengan target berbeda: jika harga sempat mencapai R:R target (kolom "Max R tercapai") dihitung kena TP, jika tidak dianggap kena SL (−1R), break even tetap 0. Profit % memakai risiko per trade dari tab Kalkulator.</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">+</span>Tambah Data Trade</h2>
+        <div class="row">
+          <div class="field"><label>Tanggal</label><input type="date" id="btDate" /></div>
+          <div class="field"><label>Hasil</label>
+            <select id="btResult" onchange="onBtResult()">
+              <option value="win">Menang</option><option value="loss">Kalah</option><option value="be">Break Even</option>
+            </select></div>
+          <div class="field"><label>R Hasil</label><input type="number" id="btR" step="0.1" value="1" /></div>
+          <div class="field"><label>Max R Tercapai</label><input type="number" id="btMfe" step="0.1" min="0" placeholder="opsional" /></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="field" style="flex:3"><label>Catatan</label>
+            <textarea id="btNote" placeholder="Kondisi market, setup, evaluasi…"></textarea></div>
+        </div>
+        <div class="foot-note">"Max R Tercapai" = R tertinggi yang sempat dicapai harga sebelum balik/kena SL. Isi agar rekomendasi R:R akurat; jika kosong, trade menang memakai R hasil dan trade kalah dianggap 0.</div>
+        <div style="margin-top:12px"><button class="primary" onclick="addBTTrade(${b.id})">Simpan Trade</button></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">≡</span>Data Backtest (${s.n})</h2>
+        ${
+          b.trades.length
+            ? `<div class="tbl-scroll"><table><thead><tr><th>Tanggal</th><th>Hasil</th><th>R</th><th>Max R</th><th>Catatan</th><th></th></tr></thead><tbody>${tradeRows}</tbody></table></div>`
+            : `<div class="empty">Belum ada data. Tambahkan trade backtest di atas.</div>`
+        }
+      </div>`;
+        $("btDate").valueAsDate = new Date();
+        onBtResult();
+      }
+
+      function onBtResult() {
+        const res = $("btResult").value;
+        $("btR").value = res === "win" ? settings.rr || 1 : res === "loss" ? -1 : 0;
+      }
+
+      function addBTTrade(id) {
+        const b = btOf(id);
+        const result = $("btResult").value;
+        const r = parseFloat($("btR").value) || 0;
+        const mfeRaw = $("btMfe").value;
+        let mfe = mfeRaw === "" ? null : Math.max(0, parseFloat(mfeRaw) || 0);
+        if (mfe !== null && result === "win") mfe = Math.max(mfe, r);
+        b.trades.push({
+          id: Date.now(),
+          date: $("btDate").value || new Date().toISOString().slice(0, 10),
+          result,
+          r,
+          mfe,
+          note: $("btNote").value.trim(),
+        });
+        b.trades.sort((x, y) => x.date.localeCompare(y.date));
+        saveBT();
+        renderBT();
+      }
+      function delBTTrade(id, tid) {
+        const b = btOf(id);
+        b.trades = b.trades.filter((t) => t.id !== tid);
+        saveBT();
+        renderBT();
+      }
+
+      // ---------- export ----------
+      const BT_HEAD = ["Judul", "Pair", "Tanggal", "Hasil", "R Hasil", "Max R Tercapai", "Catatan"];
+      function btLines(b) {
+        return b.trades.map((t) =>
+          [
+            b.title,
+            b.pair,
+            t.date,
+            resLabel[t.result] || t.result,
+            t.r,
+            mfeOf(t),
+            t.note,
+          ]
+            .map(csvEscape)
+            .join(",")
+        );
+      }
+      function slug(s) {
+        return (
+          String(s)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "backtest"
+        );
+      }
+      function exportBT(id) {
+        const b = btOf(id);
+        if (!b.trades.length) {
+          alert("Backtest ini belum punya data.");
+          return;
+        }
+        downloadCSV(
+          [BT_HEAD.join(","), ...btLines(b)],
+          `backtest-${slug(b.title)}-${new Date().toISOString().slice(0, 10)}.csv`
+        );
+      }
+      function exportAllBT() {
+        const lines = backtests.flatMap(btLines);
+        if (!lines.length) {
+          alert("Belum ada data backtest untuk diekspor.");
+          return;
+        }
+        downloadCSV(
+          [BT_HEAD.join(","), ...lines],
+          `backtest-semua-${new Date().toISOString().slice(0, 10)}.csv`
+        );
       }
 
       loadData();
