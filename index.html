@@ -1487,7 +1487,7 @@
           <div class="bt-meta">${esc(b.pair || "—")} · dibuat ${esc(
               b.created
             )}</div>
-          <div class="bt-mini">
+          ${b.desc ? `<div class="foot-note" style="margin:0 0 10px">${esc(b.desc.slice(0, 110))}${b.desc.length > 110 ? "…" : ""}</div>` : ""}<div class="bt-mini">
             <div><b>${s.n}</b><span>Trade</span></div>
             <div><b>${s.wr.toFixed(0)}%</b><span>Winrate</span></div>
             <div><b class="${cls(s.sumR)}">${fmt(s.sumR, 1)}R</b><span>Total R</span></div>
@@ -1514,6 +1514,8 @@
           <div class="field"><label>Pair / Timeframe</label>
             <input type="text" id="btPair" placeholder="mis. BTCUSDT 1H" /></div>
         </div>
+        <div class="row" style="margin-top:10px"><div class="field"><label>Deskripsi Metode</label><textarea id="btDesc" placeholder="Strategi, indikator, kondisi entry, penempatan SL/TP, periode data, aturan khusus…"></textarea></div>
+        </div>
         <div style="margin-top:12px"><button class="primary" onclick="createBT()">Buat Backtest</button></div>
       </div>
       <div class="top-actions">
@@ -1537,6 +1539,7 @@
           id: Date.now(),
           title,
           pair: $("btPair").value.trim(),
+          desc: $("btDesc").value.trim(),
           created: new Date().toISOString().slice(0, 10),
           trades: [],
         };
@@ -1635,7 +1638,7 @@
             (t) => `<tr>
           <td>${esc(t.date)}</td>
           <td><span class="tag ${t.result === "be" ? "" : t.result}">${resLabel[t.result]}</span></td>
-          <td>${fmt(t.r, 1)}R</td><td>${mfeOf(t)}R</td>
+          <td>${t.dir || "—"}</td><td>${pv(t.entry)}</td><td>${pv(t.sl)}</td><td>${pv(t.tp)}</td><td>${planRR(t) ? "1:" + planRR(t) : "—"}</td><td>${fmt(t.r, 1)}R</td><td>${mfeOf(t)}R</td>
           <td style="max-width:220px;white-space:normal;color:var(--ink-dim)">${esc(t.note)}</td>
           <td><button class="del" onclick="delBTTrade(${b.id},${t.id})">Hapus</button></td></tr>`
           )
@@ -1646,6 +1649,7 @@
         <button class="ghost" onclick="closeBT()">← Semua Backtest</button>
         <div class="actions-group">
           <button class="ghost" onclick="renameBT(${b.id})">Ubah Judul</button>
+          <button class="ghost" onclick="editDescBT(${b.id})">Ubah Deskripsi</button>
           <button class="ghost" onclick="dupBT(${b.id});closeBT()">Duplikat</button>
           <button class="ghost" onclick="exportBT(${b.id})">⤓ Export CSV</button>
           <button class="ghost" onclick="deleteBT(${b.id})">Hapus</button>
@@ -1655,6 +1659,7 @@
       <div class="card">
         <h2><span class="n">BT</span>${esc(b.title)}</h2>
         <div class="bt-meta">${esc(b.pair || "—")} · dibuat ${esc(b.created)}</div>
+        <div class="rec-box" id="btDescBox" style="background:var(--panel-2);border-color:var(--rule)">${descHTML(b)}</div>
         <div class="stat-grid">
           <div class="stat neu"><div class="v">${s.wr.toFixed(0)}%</div><div class="k">Winrate</div></div>
           <div class="stat ${s.exp >= 0 ? "pos" : "neg"}"><div class="v">${fmt(s.exp)}R</div><div class="k">Expectancy</div></div>
@@ -1703,6 +1708,14 @@
           <div class="field"><label>Max R Tercapai</label><input type="number" id="btMfe" step="0.1" min="0" placeholder="opsional" /></div>
         </div>
         <div class="row" style="margin-top:10px">
+          <div class="field"><label>Arah</label>
+            <select id="btDir" onchange="onBtPrice()"><option value="Long">Long</option><option value="Short">Short</option></select></div>
+          <div class="field"><label>Harga Entry</label><input type="number" id="btEntry" step="any" oninput="onBtPrice()" /></div>
+          <div class="field"><label>Stop Loss</label><input type="number" id="btSL" step="any" oninput="onBtPrice()" /></div>
+          <div class="field"><label>Take Profit</label><input type="number" id="btTP" step="any" oninput="onBtPrice()" /></div>
+          <div class="foot-note" id="btHint" style="width:100%;margin:0"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
           <div class="field" style="flex:3"><label>Catatan</label>
             <textarea id="btNote" placeholder="Kondisi market, setup, evaluasi…"></textarea></div>
         </div>
@@ -1714,7 +1727,7 @@
         <h2><span class="n">≡</span>Data Backtest (${s.n})</h2>
         ${
           b.trades.length
-            ? `<div class="tbl-scroll"><table><thead><tr><th>Tanggal</th><th>Hasil</th><th>R</th><th>Max R</th><th>Catatan</th><th></th></tr></thead><tbody>${tradeRows}</tbody></table></div>`
+            ? `<div class="tbl-scroll"><table><thead><tr><th>Tanggal</th><th>Hasil</th><th>Arah</th><th>Entry</th><th>SL</th><th>TP</th><th>R:R Rencana</th><th>R</th><th>Max R</th><th>Catatan</th><th></th></tr></thead><tbody>${tradeRows}</tbody></table></div>`
             : `<div class="empty">Belum ada data. Tambahkan trade backtest di atas.</div>`
         }
       </div>`;
@@ -1725,6 +1738,51 @@
       function onBtResult() {
         const res = $("btResult").value;
         $("btR").value = res === "win" ? settings.rr || 1 : res === "loss" ? -1 : 0;
+        onBtPrice();
+      }
+
+      const num = (id) => {
+        const v = parseFloat($(id).value);
+        return isNaN(v) ? null : v;
+      };
+      const pv = (v) => (v === null || v === undefined ? "—" : v);
+      function planRR(t) {
+        if (!t.entry || t.sl === null || t.sl === undefined || !t.tp) return null;
+        const risk = Math.abs(t.entry - t.sl);
+        return risk ? +(Math.abs(t.tp - t.entry) / risk).toFixed(2) : null;
+      }
+      function onBtPrice() {
+        const e = num("btEntry"), sl = num("btSL"), tp = num("btTP");
+        const dir = $("btDir").value, h = [];
+        if (e && sl && e !== sl) {
+          if (dir === "Long" ? sl >= e : sl <= e)
+            h.push('<span style="color:var(--brick)">⚠ SL di sisi yang salah untuk ' + dir + "</span>");
+          h.push("Jarak SL " + ((Math.abs(e - sl) / e) * 100).toFixed(2) + "%");
+          if (tp) {
+            if (dir === "Long" ? tp <= e : tp >= e)
+              h.push('<span style="color:var(--brick)">⚠ TP di sisi yang salah untuk ' + dir + "</span>");
+            else {
+              const rr = Math.abs(tp - e) / Math.abs(e - sl);
+              h.push("R:R rencana 1:" + rr.toFixed(2));
+              if ($("btResult").value === "win") $("btR").value = +rr.toFixed(2);
+            }
+          }
+        }
+        $("btHint").innerHTML = h.join(" · ");
+      }
+
+      function descHTML(b) {
+        return "<b>Metode:</b> " + (b.desc ? esc(b.desc).replace(/\n/g, "<br>") : '<span style="color:var(--ink-faint)">Belum ada deskripsi — klik Ubah Deskripsi.</span>');
+      }
+      function editDescBT(id) {
+        const b = btOf(id);
+        $("btDescBox").innerHTML = `<textarea id="btDescEdit" style="min-height:90px">${esc(b.desc || "")}</textarea>
+          <div class="actions-group" style="margin-top:8px"><button class="primary" onclick="saveDescBT(${id})">Simpan</button><button class="ghost" onclick="renderBT()">Batal</button></div>`;
+      }
+      function saveDescBT(id) {
+        btOf(id).desc = $("btDescEdit").value.trim();
+        saveBT();
+        renderBT();
       }
 
       function addBTTrade(id) {
@@ -1741,6 +1799,10 @@
           r,
           mfe,
           note: $("btNote").value.trim(),
+          dir: $("btDir").value,
+          entry: num("btEntry"),
+          sl: num("btSL"),
+          tp: num("btTP"),
         });
         b.trades.sort((x, y) => x.date.localeCompare(y.date));
         saveBT();
@@ -1754,14 +1816,20 @@
       }
 
       // ---------- export ----------
-      const BT_HEAD = ["Judul", "Pair", "Tanggal", "Hasil", "R Hasil", "Max R Tercapai", "Catatan"];
+      const BT_HEAD = ["Judul", "Pair", "Deskripsi Metode", "Tanggal", "Arah", "Hasil", "Harga Entry", "Stop Loss", "Take Profit", "R:R Rencana", "R Hasil", "Max R Tercapai", "Catatan"];
       function btLines(b) {
         return b.trades.map((t) =>
           [
             b.title,
             b.pair,
+            b.desc,
             t.date,
+            t.dir,
             resLabel[t.result] || t.result,
+            t.entry,
+            t.sl,
+            t.tp,
+            planRR(t),
             t.r,
             mfeOf(t),
             t.note,
